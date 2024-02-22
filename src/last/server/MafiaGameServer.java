@@ -39,6 +39,12 @@ public class MafiaGameServer {
 			String message;
 			while ((message = reader.readLine()) != null) {
 				controller.processClientMessage(userID, message);
+				try {
+					//쓰레드를 공유하고 있어 간섭현상나는 것을 방지하기 위한 코드
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		} catch (IOException e) {
 			System.out.println(userID + "님이 나가셨습니다.");
