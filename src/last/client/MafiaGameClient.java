@@ -11,6 +11,7 @@ public class MafiaGameClient {
 			PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
 
 			// 사용자 ID 설정
+			//방어로직으로 띄워쓰기 금지해야함. /vote를 띄워쓰기로 스플릿을해서 가져오기때문에 금지하는 방향으
 			Scanner scanner = new Scanner(System.in);
 			System.out.print("사용자 ID를 입력하세요: ");
 			String userID = scanner.nextLine();

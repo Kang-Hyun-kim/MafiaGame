@@ -6,7 +6,7 @@ import java.util.*;
 
 public class MafiaGameController {
 
-	private Set<PrintWriter> clientWriters = new HashSet<>(); // 역할 정보
+	private Set<PrintWriter> clientWriters = new HashSet<>(); // 역할 정보 주소
 	private boolean gameStarted = false;
 	private boolean isDayTime = false; // 낮과 밤의 상태 값 기본 적으로 밤(false) 상태를 갖는다. 7명의 플레이어가 모여야 게임이 실행된다.
 	private int playerCount = 0; // 플레이어 수
@@ -15,7 +15,7 @@ public class MafiaGameController {
 	private Map<String, Integer> voteCounts = new HashMap<>(); // 플레이어별 투표 수
 	private Map<String, String> playerMap = new HashMap<>(); // 플레이어 역할 정보
 	private List<String> roles = new ArrayList<>(); // 역할 정보
-
+	private List userName = new ArrayList();
 	private String playerWithMostVotes; // 가장 많은 표를 받은 플레이어
 
 	// 역할 상수 정의
@@ -23,17 +23,6 @@ public class MafiaGameController {
 	private static final String DOCTOR = "의사";
 	private static final String POLICE = "경찰";
 	private static final String MAFIA = "마피아";
-
-	public void startServer() {
-		try (ServerSocket serverSocket = new ServerSocket(90)) {
-			System.out.println("마피아 게임 서버 시작...");
-			while (true) {
-				new Handler(serverSocket.accept()).start();
-			}
-		} catch (IOException e) {
-			System.err.println("90 포트에서 서버를 시작할 수 없습니다.");
-		}
-	}
 
 	private class Handler extends Thread {
 		private Socket socket;
@@ -54,6 +43,7 @@ public class MafiaGameController {
 				userID = reader.readLine();
 				System.out.println(userID + "님이 연결되었습니다.");
 				playerSockets.put(userID, socket);
+				userName.add(userID); /////////////////////////
 				playerCount++;
 
 				// 모든 클라이언트에게 새로운 사용자가 연결되었음을 알림
@@ -67,16 +57,17 @@ public class MafiaGameController {
 
 				// 7명의 클라이언트가 모이면 게임 시작
 				if (playerCount >= 7 && !gameStarted) {
-					
-					//역할 할당 메서드
+
+					// 역할 할당 메서드
 					assignRolesRandomly();
-					//게임이 시작되었는지 상태값 변경
+					// 게임이 시작되었는지 상태값 변경
 					gameStarted = true;
-					//낮과 밤의 상태값 변경
+					// 낮과 밤의 상태값 변경
 					isDayTime = !isDayTime;
 
 				}
 
+//게임이 끝날때까지 무한루프를 돌리는 구간 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 				// 클라이언트로부터 메시지 수신 및 브로드캐스트
 				String message;
 				if (isDayTime)
@@ -84,15 +75,25 @@ public class MafiaGameController {
 				else if (!(isDayTime) && gameStarted)
 					broadcast("밤입니다\n의사는 사람을 살리고\n경찰은 마피아를 찾고\n마피아는 시민을 추방해주세요");
 				while ((message = reader.readLine()) != null) {
+
+					// 플레이어 메시지가 /인 명령어 호출을 사용했을때 if문 진입
+
 					// Check if it is a voting message
 					if (message.startsWith("/vote")) {
 						// Process the vote
 						vote(userID, message);
 					} else if (!(isDayTime) && gameStarted) {
 						broadcast("밤입니다\n의사는 사람을 살리고\n경찰은 마피아를 찾고\n마피아는 시민을 추방해주세요");
-						// 의사가 남
-						if (message.startsWith("/role")) {
-//							switch()
+						// 의사일때
+						if (message.startsWith("/doc")) {
+//							broadcast("userID : "+ this.userID);
+//							broadcast("playerMap.get(userID) : "+ playerMap.get(userID));
+//							broadcast("playerMap.get(userID).contains(DOCTOR) : " +playerMap.get(userID).contains(DOCTOR));
+							if(playerMap.get(userID).contains(DOCTOR)) {
+//							if(userID.equals(DOCTOR)) {
+								broadcast("good doc");
+							}else
+								broadcast("No Mr.Dr");
 						}
 					} else {
 						// Broadcast regular message to all clients
@@ -100,7 +101,9 @@ public class MafiaGameController {
 							clientWriter.println(userID + ": " + message);
 						}
 					}
+
 				}
+//구간 종료 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 			} catch (IOException e) {
 				System.out.println(userID + "님이 나갔습니다.");
 			} finally {
@@ -116,6 +119,18 @@ public class MafiaGameController {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	// 서버 시작 메서드
+	public void startServer() {
+		try (ServerSocket serverSocket = new ServerSocket(90)) {
+			System.out.println("마피아 게임 서버 시작...");
+			while (true) {
+				new Handler(serverSocket.accept()).start();
+			}
+		} catch (IOException e) {
+			System.err.println("90 포트에서 서버를 시작할 수 없습니다.");
 		}
 	}
 
@@ -159,40 +174,18 @@ public class MafiaGameController {
 		}
 	}
 
-	// 투표 상태를 클라이언트에게 전송
-	private void broadcastVoteStatus() {
-		System.out.println("broadcastVoteStatus 진입");/////////////////////////////////////
-		StringBuilder voteStatus = new StringBuilder();
-		voteStatus.append("현재 투표 상태:\n");
-
-		for (Map.Entry<String, String> entry : playerVotes.entrySet()) {
-			System.out.println("broadcastVoteStatus > forEach 진입");/////////////////////////////////////
-			voteStatus.append(entry.getKey()).append("님이 ").append(entry.getValue()).append("님에게 투표하셨습니다.\n");
-//			System.out.println("voteStatus " + voteStatus + "] entry.getKey()" + entry.getKey() + "entry.getValue()"
-//					+ entry.getValue());/////////////////////////////////////
-		}
-		// 모든 클라이언트에게 투표 상태 전송
+	// 클라이언트에게 메시지를 출력하는 메서드
+	public void broadcastMessage(String userID, String message) {
+		// 모든 클라이언트에게 메시지 전송
 		for (PrintWriter clientWriter : clientWriters) {
-
-			clientWriter.println(voteStatus.toString());
+			clientWriter.println(userID + ": " + message);
 		}
 	}
 
-	// 모든 클라이언트에게 브로드캐스트
+	// 모든 클라이언트에게 출력 ( 사회자(서버)가 플레이어들에게 공통적으로 보여줄 메시지)
 	private void broadcast(String message) {
 		for (PrintWriter clientWriter : clientWriters) {
 			clientWriter.println(message);
-		}
-	}
-
-	// 클라이언트가 메시지를 전송할 때 호출됨 (지금 사용안하고 있음 추후에 완성시 사용안하면 삭제 예정)
-	public void processClientMessage(String userID, String message) {
-		if (message.startsWith("/vote")) {
-			vote(userID, message);
-
-		} else {
-			broadcastMessage(userID, message);
-
 		}
 	}
 
@@ -213,6 +206,12 @@ public class MafiaGameController {
 		}
 		// '/vote playerName'에서 playerName 추출
 		String[] parts = voteMessage.split(" ");
+		// 투표 가능한 플레이어인지 확인하기 위해서는 투표한 값에서 split으로 유저명의 값이 담긴 parts를 사용
+		if (!(userName.contains(parts[1]))) {// false면 실행
+			broadcast("없는 유저입니다. 다시 투표해 주세요");
+			return;
+		}
+		
 		if (parts.length == 2) {
 			String playerName = parts[1];
 			// 플레이어가 투표한 사람 정보 저장
@@ -223,14 +222,8 @@ public class MafiaGameController {
 			if (playerVotes.size() == playerCount) {
 				handleVoteResult();
 			}
-		}
-	}
-
-	// 클라이언트에게 메시지를 출력하는 메서드
-	public void broadcastMessage(String userID, String message) {
-		// 모든 클라이언트에게 메시지 전송
-		for (PrintWriter clientWriter : clientWriters) {
-			clientWriter.println(userID + ": " + message);
+		}else {
+			
 		}
 	}
 
@@ -238,6 +231,25 @@ public class MafiaGameController {
 	private void updateVoteCounts(String votee) {
 		voteCounts.put(votee, voteCounts.getOrDefault(votee, 0) + 1);
 
+	}
+
+	// 투표 상태를 클라이언트에게 전송
+	private void broadcastVoteStatus() {
+//		System.out.println("broadcastVoteStatus 진입");/////////////////////////////////////
+		StringBuilder voteStatus = new StringBuilder();
+		voteStatus.append("현재 투표 상태:\n");
+
+		for (Map.Entry<String, String> entry : playerVotes.entrySet()) {
+//			System.out.println("broadcastVoteStatus > forEach 진입");/////////////////////////////////////
+			voteStatus.append(entry.getKey()).append("님이 ").append(entry.getValue()).append("님에게 투표하셨습니다.\n");
+//			System.out.println("voteStatus " + voteStatus + "] entry.getKey()" + entry.getKey() + "entry.getValue()"
+//					+ entry.getValue());/////////////////////////////////////
+		}
+		// 모든 클라이언트에게 투표 상태 전송
+		for (PrintWriter clientWriter : clientWriters) {
+
+			clientWriter.println(voteStatus.toString());
+		}
 	}
 
 	// 투표 결과 처리
@@ -250,7 +262,7 @@ public class MafiaGameController {
 			}
 		}
 		if (isTie(maxVotes)) {
-			System.out.println("동점이 발생하여 추방을 하지 않습니다.");
+			broadcast("동점이 발생하여 추방을 하지 않습니다.");
 			initializeVoteCounts(); // 투표 결과 초기화
 		} else {
 			broadcast(playerWithMostVotes + "님이 추방되었습니다. (" + maxVotes + "표)");
@@ -282,6 +294,31 @@ public class MafiaGameController {
 		voteCounts.clear();
 	}
 
+	// 60초 Timer(Timer, 500); 추가 할지 말지 고민중
+
+	// @@@@@@@@@@@@@@@@@@@@@@
+	// 게임의 현재 상태를 리턴해주는 메서드( 낮, 밤, 투표, 밤이였을때 할 수 있는 플레이어 역할들 ) 필요한지 잘 모르겠음
+
+
+	// 의사가 플레이어 지목 ( 밤일때)
+	private void doctorNightTarget() {
+		// 메서드가 시작이 될때 플레이어가 의사여야만 된다. 플레이어 역할을 전달해주어야한다.
+		if(!(isDayTime)) {
+			if(playerMap.containsKey(DOCTOR))//
+			return;
+		}
+		
+		broadcast("의사만 사용 가능한 명령어입니다.");
+
+	}
+	// 경찰이 플레이어 역할 보기
+
+	// 마피아 플레이어 지목 (1명일때, 2명일때) = 리턴 값으로 유저 이름을 전달 없으면 null이나 공백으로 예외를 발생시킨다.
+
+	// 의사가 고른 플레이어 & 마피아가 고른 플레이어(예외 값 들어있을 수 있음)를 교차 검증하여 추방하거나 추방하지 않는 메서드
+
+	// 추방된 사람들끼리 채팅방을 만들어주는 메서드 해보고 싶다.. 그냥 희망사항
+
 	// 플레이어 클라이언트 종료
 	private void terminateClient(String player) {
 		broadcast("player -> " + player);
@@ -299,11 +336,23 @@ public class MafiaGameController {
 				broadcast("남은 플레이어 수 : " + playerCount);/////////////////////////////////////////////////////////
 				playerSockets.remove(player); // hashmap에 저장된 현재 플레이어들의 정보 삭제
 				playerVotes.remove(player); // hashmap에 저장된 현재 플레이어들의 정보 삭제
+				clientWriters.remove(player); // 플레이어 주소정보 삭제
 				broadcast("남은 플레이어  : " + playerSockets); ///////////////////////////////////////////////////////
 				broadcast("playerVotes.size() : " + playerVotes.size()); ////////////////////////
 			} catch (IOException e) {
 				System.err.println("클라이언트 종료 중 오류가 발생했습니다: " + e.getMessage());
 			}
+		}
+	}
+
+	// 클라이언트가 메시지를 전송할 때 호출됨 (지금 사용안하고 있음 추후에 완성시 사용안하면 삭제 예정)
+	public void processClientMessage(String userID, String message) {
+		if (message.startsWith("/vote")) {
+			vote(userID, message);
+
+		} else {
+			broadcastMessage(userID, message);
+
 		}
 	}
 
