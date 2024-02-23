@@ -15,17 +15,21 @@ public class MafiaGameController {
 	private Map<String, Integer> voteCounts = new HashMap<>(); // 플레이어별 투표 수
 	private Map<String, String> playerMap = new HashMap<>(); // 플레이어 역할 정보
 	private List<String> roles = new ArrayList<>(); // 역할 정보
-	private List<String> userName = new ArrayList();
+	private List<String> userName = new ArrayList(); // 유저 이름 배열
 	private String playerWithMostVotes; // 가장 많은 표를 받은 플레이어
-	String SelectUser; // 찾고 싶은 유저 이름
+
+	// test용으로 사용할 상태 값
+	// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	private static boolean 아침 = false;
+	private static boolean 저녁 = false;
+	// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 	// 역할 상수 정의
 	private static final String CITIZEN = "시민";
 	private static final String DOCTOR = "의사";
 	private static final String POLICE = "경찰";
 	private static final String MAFIA = "마피아";
-	private static final String MAFIA2 = "마피아2";
 
-	
 	private class Handler extends Thread {
 		private Socket socket;
 		private PrintWriter writer;
@@ -58,82 +62,119 @@ public class MafiaGameController {
 				clientWriters.add(writer);
 				userName.add(userID); /////////////////////////
 
-				// 7명의 클라이언트가 모이면 게임 시작
-				if (playerCount >= 7 && !gameStarted) {
+//				// 7명의 클라이언트가 모이면 게임 시작
+//				if (playerCount >= 7 && !gameStarted) {
+//
+//					// 역할 할당 메서드
+//					assignRolesRandomly();
+//					// 게임이 시작되었는지 상태값 변경
+//					gameStarted = true;
+//					// 낮과 밤의 상태값 변경
+//					isDayTime = !isDayTime;
+//
+//				}
 
-					// 역할 할당 메서드
+				// 플레이어가 7명 그리고 아침이 f고 저녁도 f일때 실행 = 최초 7명이라면 실행 , 게임이 진행되고 있는 상태에서는 아침이나 저녁의
+				// 상태값이 하나라도 t이기 때문
+				if (playerCount >= 7 && !(아침) && !(저녁)) {
+					// 역할 배정은 최초 1회만 실행하면 된다.
+					// 역할();
+//						ㄴ> 역할 배정이 끝나면 플레이어들 아이디와 역할을 저장해야한다.
 					assignRolesRandomly();
-					// 게임이 시작되었는지 상태값 변경
-					gameStarted = true;
-					// 낮과 밤의 상태값 변경
-					isDayTime = !isDayTime;
+					// 아침상태값 변경
+					아침 = true;
+					// 저녁상태값 다시변경 초기화 작업이라고 생각해줌
+					저녁 = false;
+				}
+
+				// 클라이언트의 입력값이 null이 아닐경우 무한반복 [스페이스&엔터도 null이 아님]
+				// reader.readLine() 을 만나면 대기상태로 바뀐다. 실제로 while문의 조건에서 멈춰 있는다. message를 대입하기 전에서
+				// 대기중
+				String message;
+				while ((message = reader.readLine()) != null) {
+					try {
+						Thread.sleep(99); // 0.99초 동안 잠들게 만든다 쓰레드 간섭을 최소화 시키려고 만든 방어로직인데 잘은 모르겠다. 찾아볼것
+					} catch (Exception e) {
+						System.out.println("Handle>while>Thread.sleep>>>>" + e.getMessage());
+					}
+					// 아침은 참, 저녁은 거짓
+					if ((아침) && !(저녁)) {
+						낮(userID,message);
+						
+					}
+
+					// 아침은 거짓, 저녁은 참
+					if (!(아침) && (저녁)) {
+						밤(userID,message);
+					}
 
 				}
 
 //게임이 끝날때까지 무한루프를 돌리는 구간 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 				// 클라이언트로부터 메시지 수신 및 브로드캐스트
-				String message;
-				String dTarget = null, mTarget = null, pTarget = null;
-				if (isDayTime) {
-					broadcast("=======================낮입니다======================= [/vote 플레이어이름]으로 투표를 진행해 주세요");
-					
-				}
-				boolean one = false;
-				while ((message = reader.readLine()) != null) {
-
-					// 플레이어 메시지가 /인 명령어 호출을 사용했을때 if문 진입
-
-					// Check if it is a voting message
-					if (message.startsWith("/vote")) {
-						// Process the vote
-						vote(userID, message);
-					} else if (!(isDayTime) && gameStarted) {
-						
-						if(!one) {
-							broadcast("--------------밤입니다--------------\n의사는 사람을 살리고\n경찰은 마피아를 찾고\n마피아는 추방 할 플레이어 선택 하세요");
-							one = !(one);
-						}
-						
-						if (dTarget != null && dTarget.equals(mTarget))
-							broadcast("뛰어난 의사가 플레이어를 구하였습니다.");
-						
-						if (message.startsWith("/role")) {
-							String[] parts = message.split(" ");
-							String target = "";
-							if (parts.length == 2)
-								target = parts[1];
-
-							switch (playerMap.get(userID)) {
-							case DOCTOR -> {
-								dTarget = sendRoleMessage(userID, target);// 플레이어 선택 하고 변수에 저장
-								broadcast("dTarget >>>> " + dTarget);
-							}
-							case MAFIA -> {
-								mTarget = sendRoleMessage(userID, target);// 플레이어 선택 저장
-								broadcast("mTarget >>>> " + mTarget);
-							}
-							case POLICE -> {
-								pTarget = sendRoleMessage(userID, target);// 플레이어 훔쳐보기
-								broadcast("pTarget >>>> " + pTarget);
-							}
-							default -> sendPlayMessage(userID, "시민은 아무것도 할 수 없습니다.");
-
-							}
-						}
-
-						try {
-							Thread.sleep(10);//Thread 간섭 방지 코드
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					} else {
-						// Broadcast regular message to all clients
-						for (PrintWriter clientWriter : clientWriters) {
-							clientWriter.println(userID + ": " + message);
-						}
-					}
-
-				}
+//				String message;
+//				String dTarget = null, mTarget = null, pTarget = null;
+//				if (isDayTime) {
+//					broadcast("=======================낮입니다======================= [/vote 플레이어이름]으로 투표를 진행해 주세요");
+//
+//				}
+//				boolean one = false;
+//				while ((message = reader.readLine()) != null) {
+//
+//					// 플레이어 메시지가 /인 명령어 호출을 사용했을때 if문 진입
+//
+//					// Check if it is a voting message
+//					if (message.startsWith("/vote")) {
+//						// Process the vote
+//						vote(userID, message);
+//					} else if (!(isDayTime) && gameStarted) {
+//
+//						if (!one) {
+//							broadcast(
+//									"--------------밤입니다--------------\n의사는 사람을 살리고\n경찰은 마피아를 찾고\n마피아는 추방 할 플레이어 선택 하세요");
+//							one = !(one);
+//						}
+//
+//						if (dTarget != null && dTarget.equals(mTarget))
+//							broadcast("뛰어난 의사가 플레이어를 구하였습니다.");
+//
+//						if (message.startsWith("/role")) {
+//							String[] parts = message.split(" ");
+//							String target = "";
+//							if (parts.length == 2)
+//								target = parts[1];
+//
+//							switch (playerMap.get(userID)) {
+//							case DOCTOR -> {
+//								dTarget = sendRoleMessage(userID, target);// 플레이어 선택 하고 변수에 저장
+//								broadcast("dTarget >>>> " + dTarget);
+//							}
+//							case MAFIA -> {
+//								mTarget = sendRoleMessage(userID, target);// 플레이어 선택 저장
+//								broadcast("mTarget >>>> " + mTarget);
+//							}
+//							case POLICE -> {
+//								pTarget = sendRoleMessage(userID, target);// 플레이어 훔쳐보기
+//								broadcast("pTarget >>>> " + pTarget);
+//							}
+//							default -> sendPlayMessage(userID, "시민은 아무것도 할 수 없습니다.");
+//
+//							}
+//						}
+//
+//						try {
+//							Thread.sleep(10);// Thread 간섭 방지 코드
+//						} catch (InterruptedException e) {
+//							e.printStackTrace();
+//						}
+//					} else {
+//						// Broadcast regular message to all clients
+//						for (PrintWriter clientWriter : clientWriters) {
+//							clientWriter.println(userID + ": " + message);
+//						}
+//					}
+//
+//				}
 //구간 종료 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 			} catch (IOException e) {
 				System.out.println(userID + "님이 나갔습니다.");
@@ -151,6 +192,96 @@ public class MafiaGameController {
 				}
 			}
 		}
+	}
+
+	// 낮메서드 > 낮에 필요한 메서드를 하위 메서드들로 넣음
+	private void 낮(String userID,String message) throws IOException {
+		// 아침은 참. 저녁은 거짓
+		아침 = true;
+		저녁 = false;
+		// 유저선택() -> null일수 있다. 조건문으로 검사해야함
+		String target = 유저선택(userID,message);
+		System.out.println("TARGET >>>>>> "+target);
+		// 유저선택한정보공개(투표라면 투표한 상황, 능력사용이라면 능력을 사용한 후 상황)
+		// 추방
+		// 게임종료체크
+
+	}
+
+	// 밤메서드 > 밤에 필요한 메서드를 하위 메서드들로 넣음
+	private void 밤(String userID,String message) {
+		// 저녁은 참. 아침은 거짓
+		// 유저선택
+		// 유저선택한정보공개(투표라면 투표한 상황, 능력사용이라면 능력을 사용한 후 상황)
+		// 추방
+		// 게임종료 체크
+	}
+
+	// 투표할때 사용할수있고, 밤에는 죽일 유저를 선택할수 있어 공통기능으로 사용될 유저를 선택하는 기능
+	private String 유저선택(String myID, String message) throws IOException {
+		// 내 아이디에게 어떤 유저를 선택했는지 보여주려면 나의 아이디와 원하는 유저의 아이디가 필요하다
+
+		// 플레이어들의 클라이언트의정보가 담긴 map에서 내 소켓정보를 가져온다.
+		PrintWriter writer = new PrintWriter(playerSockets.get(myID).getOutputStream(), true);
+
+		// 아침이 참이고 저녁이 거짓 && message가 /vote로 시작할때
+		if (아침 && !(저녁) && message.startsWith("/vote")) {
+
+			// [/vote 유저명]으로 입력받았을때 " "공백을 기준으로 문자배열에 저장 = ["/vote","유저명"]
+			String[] wantUserID = message.split(" ");
+
+			// 닉네임이 정상적으로 저장되지 않았을때
+			if (wantUserID.length < 2 && 2 > wantUserID.length) {
+				writer.println("정상적으로 등록된 유저가 아닙니다.");
+				return null;
+
+			}
+			// 나에게 출력을 해준다.
+			writer.println("지금은 투표중인 아침()>> 낮()>> 조건문");
+			writer.println("아침: "+아침+"\n저녁: "+저녁);
+			
+
+			// 입력받은 유저아이디가 정상적일때
+			if (wantUserID.length == 2 && playerVotes.containsKey(wantUserID[1])) {
+				// 플레이어별 투표 정보
+				playerVotes.put(myID, wantUserID[1]);
+				// 플레이어별 투표 수
+				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+				writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+				return wantUserID[1];
+			}
+
+			// 투표한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
+			if (playerVotes.containsKey(myID)) {
+				writer.println("투표한사람 검증 조건문 >>>>>>>>");
+				writer.println("당신은 이미 투표를 마쳤습니다.");
+				return null;
+
+			}
+			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다.
+			
+
+			// 저녁일때 = 역할에 따라 플레이어를 선택 아이디를 리턴, 시민은 안리턴, 경찰은 직업리턴을 해준다.
+		} else if (!(아침) && 저녁) {
+
+			writer.println("아침 & 저녁 참,거짓 조건문>>>>>>>>");
+			return "";
+			// 아침=거짓, 저녁=거짓일때 방어코드
+		} else {
+			writer.println("명령어를 정확히 입력해주세요");
+			return "";
+		}
+		
+		return message;
+
+		// 만약 경찰이 밤에 유저를 선택했다면? 경찰의 능력을 사용할때이므로 밤일때의 조건에서 유저가 경찰일때 조건으로 유저의 아이디가 아닌 유저의
+		// 역할을 리턴해준다.
+
+	}
+
+	private void 추방(String myId, String message) {
+//		//가장 많은 표를 받은 플레이어 (추방메서드에서 사용
+//		playerWithMostVotes		
 	}
 
 	// 서버 시작 메서드
