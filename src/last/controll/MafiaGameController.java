@@ -266,9 +266,12 @@ public class MafiaGameController {
 
 			// 저녁일때 = 역할에 따라 플레이어를 선택 아이디를 리턴, 시민은 안리턴, 경찰은 직업리턴을 해준다.
 //		} else if (!(아침) && 저녁 && message.startsWith("/role")) {
-		} else if ((아침) && !저녁 && message.startsWith("/role")) {
+		} else if ((아침) && !저녁 ) { // 테스트하기위해서 강제로 만듬
 			writer.println("아침 & 저녁 참,거짓 조건문>>>>>>>> 저녁 상태");
-
+			
+			if(message.startsWith("/role")) {
+				
+			
 			// [/role 유저명]으로 입력받았을때 " "공백을 기준으로 문자배열에 저장 = ["/role","유저명"]
 			String[] wantUserID = message.split(" ");
 
@@ -279,42 +282,87 @@ public class MafiaGameController {
 
 			}
 			// 나에게 출력을 해준다.
-			writer.println("지금은 밤능력사용 저녁()>> 밤()>> 조건문");
-			writer.println("아침: " + 아침 + "\n저녁: " + 저녁);
-			writer.println("playerVotes.containsKey(wantUserID[1]): " + playerMap);
-			writer.println("나의 능력 " + playerMap.get(myID));
-			writer.println("선택한 유저 능력" + playerMap.get(wantUserID[1]));
-
-			writer.println("나의 능력 " + myID);
-			writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+//			writer.println("지금은 밤능력사용 저녁()>> 밤()>> 조건문");
+//			writer.println("아침: " + 아침 + "\n저녁: " + 저녁);
+//			writer.println("playerMap 플레이어 역할 : " + playerMap);
+//			writer.println("voteCounts 투표 카운트: " + voteCounts);
+//			writer.println("playerVotes 투표 선택: " + playerVotes);
+//			writer.println("나의 능력 : " + playerMap.get(myID));
+//			writer.println("선택한 유저 능력 : " + playerMap.get(wantUserID[1]));
+//
+//			writer.println("유저명 : " + myID);
+//			writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+			
+			
+//			writer.println("============================");
+//			writer.println("playerMap.get(myID).contains(MAFIA)" + playerMap.get(myID).contains(MAFIA));
+//			writer.println("playerMap.get(myID).contains(DOCTOR)" +playerMap.get(myID).contains(DOCTOR));
+//			writer.println("playerMap.get(myID).contains(POLICE)"+ playerMap.get(myID).contains(POLICE));
+//			writer.println("playerMap.get(myID).contains(CITIZEN)"+ playerMap.get(myID).contains(CITIZEN));
+//			writer.println("============================");
+//			writer.println("playerVotes.containsKey(myID) : "+ playerVotes.containsKey(myID) );
+//			writer.println("( wantUserID.length == 2 && !(playerVotes.containsKey(myID) )&&(\r\n"
+//					+ "					playerMap.get(myID).contains(DOCTOR)||\r\n"
+//					+ "					playerMap.get(myID).contains(MAFIA) ||\r\n"
+//					+ "					playerMap.get(myID).contains(POLICE))) : "+
+//					( wantUserID.length == 2 && !(playerVotes.containsKey(myID) )&&(
+//							playerMap.get(myID).contains(DOCTOR)||
+//							playerMap.get(myID).contains(MAFIA) ||
+//							playerMap.get(myID).contains(POLICE))) );
+//			writer.println("playerVotes.get(myID).contains(MAFIA)" + playerVotes.get(myID).contains(MAFIA));
+//			writer.println("playerVotes.get(myID).contains(DOCTOR)" +playerVotes.get(myID).contains(DOCTOR));
+//			writer.println("playerVotes.get(myID).contains(POLICE)"+ playerVotes.get(myID).contains(POLICE));
+//			writer.println("playerVotes.get(myID).contains(CITIZEN)"+ playerVotes.get(myID).contains(CITIZEN));
+//			writer.println("============================");
+		// 마피아,의사 일때
 
 			// 능력사용한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
 			if (playerVotes.containsKey(myID)) {
-				writer.println("밤 역할 검증 조건문 >>>>>>>>");
+				writer.println("밤 역할 검증 조건문 >>>>>>>>"); // @@@@@@@@@@@@@@@@@@@@@@
 				writer.println("당신은 이미 역할을 마쳤습니다.");
 				return null;
 
 				// 배열의 길이가 2이고 투표MAP에 나의 아이디가 false라면 (투표를 하면 put으로 값을 넣었다)
 				// 나의 직업이 마피아,경찰,의사인 경우
-			} else if (wantUserID.length == 2 && !(playerVotes.containsKey(myID) && playerMap.get(myID).equals(DOCTOR)
-					|| playerMap.get(myID).equals(MAFIA) || playerMap.get(myID).equals(POLICE))) {
-				// 플레이어별 투표 정보
-				playerVotes.put(myID, wantUserID[1]);
-
-				if (!playerMap.get(myID).equals(POLICE)) {
+//			} 
+//			else if(playerVotes.size()==0 && (playerMap.get(myID).contains(MAFIA)||playerMap.get(myID).contains(DOCTOR))) {
+//				writer.println("사이즈가 0입니다");
+//				// 플레이어별 투표 수
+//				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+//				playerVotes.put(myID, wantUserID[1]);
+//				writer.println("3내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+//				return wantUserID[1];
+				
+			}else if (( wantUserID.length == 2 && !(playerVotes.containsKey(myID) )&&(
+					playerMap.get(myID).contains(DOCTOR)||
+					playerMap.get(myID).contains(MAFIA) ||
+					playerMap.get(myID).contains(POLICE)))) {
+				// 플레이어별 투표 정보 ( 투표를 하고 난 후에 초기화 작업이 이루어져야 한다. 게임체크할때 초기화를 해주면 좋을것같다)
+					writer.println("나의 직업이 마피아,경찰,의사인 경우 >>>>");
+				// 마피아,의사 일때
+				if (playerMap.get(myID).contains(MAFIA) || playerMap.get(myID).contains(DOCTOR)) {
 					// 플레이어별 투표 수
 					voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
-					writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+					playerVotes.put(myID, wantUserID[1]);
+					writer.println("[ " + wantUserID[1] + " ]를 선택했습니다.");
 					return wantUserID[1];
-
-				} else {
-
+					//// 경찰일때
+				}else if(playerMap.get(myID).contains(POLICE)) {
+					//경찰이니까 카운트에 올릴 필요 없음
+//					voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+					writer.println("선택한 유저직업은 [ " + playerMap.get(wantUserID[1]) + " ] 입니다.");
+					return playerMap.get(wantUserID[1]);
+				//시민일때
 				}
+			}else if(playerMap.get(myID).contains(CITIZEN)) {
+				writer.println("시민은 능력이 없답니다");
+				return null;
 			}
 			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다. 그리고 null의 대한 처리는 낮()에서 처리
-			return "";
+			return null;
 			// 아침=거짓, 저녁=거짓일때 방어코드
-		} else {
+		}
+		}else {
 			writer.println("명령어를 정확히 입력해주세요");
 			return "";
 		}
