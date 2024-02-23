@@ -23,7 +23,9 @@ public class MafiaGameController {
 	private static final String DOCTOR = "의사";
 	private static final String POLICE = "경찰";
 	private static final String MAFIA = "마피아";
+	private static final String MAFIA2 = "마피아2";
 
+	
 	private class Handler extends Thread {
 		private Socket socket;
 		private PrintWriter writer;
