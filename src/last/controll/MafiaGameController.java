@@ -99,13 +99,14 @@ public class MafiaGameController {
 					}
 					// 아침은 참, 저녁은 거짓
 					if ((아침) && !(저녁)) {
-						낮(userID,message);
-						
+						낮(userID, message);
+
 					}
 
 					// 아침은 거짓, 저녁은 참
 					if (!(아침) && (저녁)) {
-						밤(userID,message);
+						밤(userID, message);
+
 					}
 
 				}
@@ -195,23 +196,28 @@ public class MafiaGameController {
 	}
 
 	// 낮메서드 > 낮에 필요한 메서드를 하위 메서드들로 넣음
-	private void 낮(String userID,String message) throws IOException {
+	private void 낮(String userID, String message) throws IOException {
 		// 아침은 참. 저녁은 거짓
 		아침 = true;
 		저녁 = false;
 		// 유저선택() -> null일수 있다. 조건문으로 검사해야함
-		String target = 유저선택(userID,message);
-		System.out.println("TARGET >>>>>> "+target);
+		String target = 유저선택(userID, message);
+		System.out.println("TARGET >>>>>> " + target);
 		// 유저선택한정보공개(투표라면 투표한 상황, 능력사용이라면 능력을 사용한 후 상황)
 		// 추방
-		// 게임종료체크
+		// 추방에 사용한 정보 초기화
+		// 게임종료체크(여기에서 밤 낮의 상태값 변경)
 
 	}
 
 	// 밤메서드 > 밤에 필요한 메서드를 하위 메서드들로 넣음
-	private void 밤(String userID,String message) {
+	private void 밤(String userID, String message) throws IOException {
 		// 저녁은 참. 아침은 거짓
-		// 유저선택
+		아침 = false;
+		저녁 = true;
+		// 유저선택() -> null일수 있다. 조건문으로 검사해야함
+		String target = 유저선택(userID, message);
+		System.out.println("TARGET >>>>>> " + target);
 		// 유저선택한정보공개(투표라면 투표한 상황, 능력사용이라면 능력을 사용한 후 상황)
 		// 추방
 		// 게임종료 체크
@@ -231,25 +237,15 @@ public class MafiaGameController {
 			String[] wantUserID = message.split(" ");
 
 			// 닉네임이 정상적으로 저장되지 않았을때
-			if (wantUserID.length < 2 && 2 > wantUserID.length) {
+			if (wantUserID.length < 2 || 2 > wantUserID.length) {
 				writer.println("정상적으로 등록된 유저가 아닙니다.");
 				return null;
 
 			}
 			// 나에게 출력을 해준다.
 			writer.println("지금은 투표중인 아침()>> 낮()>> 조건문");
-			writer.println("아침: "+아침+"\n저녁: "+저녁);
-			
-
-			// 입력받은 유저아이디가 정상적일때
-			if (wantUserID.length == 2 && playerVotes.containsKey(wantUserID[1])) {
-				// 플레이어별 투표 정보
-				playerVotes.put(myID, wantUserID[1]);
-				// 플레이어별 투표 수
-				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
-				writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
-				return wantUserID[1];
-			}
+			writer.println("아침: " + 아침 + "\n저녁: " + 저녁);
+			writer.println("playerVotes.containsKey(wantUserID[1]): " + playerVotes.containsKey(myID));
 
 			// 투표한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
 			if (playerVotes.containsKey(myID)) {
@@ -257,21 +253,72 @@ public class MafiaGameController {
 				writer.println("당신은 이미 투표를 마쳤습니다.");
 				return null;
 
+				// 배열의 길이가 2이고 투표MAP에 나의 아이디가 false라면 (투표를 하면 put으로 값을 넣었다)
+			} else if (wantUserID.length == 2 && !(playerVotes.containsKey(myID))) {
+				// 플레이어별 투표 정보
+				playerVotes.put(myID, wantUserID[1]);
+				// 플레이어별 투표 수
+				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+				writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+				return wantUserID[1];
 			}
-			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다.
-			
+			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다. 그리고 null의 대한 처리는 낮()에서 처리
 
 			// 저녁일때 = 역할에 따라 플레이어를 선택 아이디를 리턴, 시민은 안리턴, 경찰은 직업리턴을 해준다.
-		} else if (!(아침) && 저녁) {
+//		} else if (!(아침) && 저녁 && message.startsWith("/role")) {
+		} else if ((아침) && !저녁 && message.startsWith("/role")) {
+			writer.println("아침 & 저녁 참,거짓 조건문>>>>>>>> 저녁 상태");
 
-			writer.println("아침 & 저녁 참,거짓 조건문>>>>>>>>");
+			// [/role 유저명]으로 입력받았을때 " "공백을 기준으로 문자배열에 저장 = ["/role","유저명"]
+			String[] wantUserID = message.split(" ");
+
+			// 닉네임이 정상적으로 저장되지 않았을때
+			if (wantUserID.length < 2 || 2 > wantUserID.length) {
+				writer.println("정상적으로 등록된 유저가 아닙니다.");
+				return null;
+
+			}
+			// 나에게 출력을 해준다.
+			writer.println("지금은 밤능력사용 저녁()>> 밤()>> 조건문");
+			writer.println("아침: " + 아침 + "\n저녁: " + 저녁);
+			writer.println("playerVotes.containsKey(wantUserID[1]): " + playerMap);
+			writer.println("나의 능력 " + playerMap.get(myID));
+			writer.println("선택한 유저 능력" + playerMap.get(wantUserID[1]));
+
+			writer.println("나의 능력 " + myID);
+			writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+
+			// 능력사용한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
+			if (playerVotes.containsKey(myID)) {
+				writer.println("밤 역할 검증 조건문 >>>>>>>>");
+				writer.println("당신은 이미 역할을 마쳤습니다.");
+				return null;
+
+				// 배열의 길이가 2이고 투표MAP에 나의 아이디가 false라면 (투표를 하면 put으로 값을 넣었다)
+				// 나의 직업이 마피아,경찰,의사인 경우
+			} else if (wantUserID.length == 2 && !(playerVotes.containsKey(myID) && playerMap.get(myID).equals(DOCTOR)
+					|| playerMap.get(myID).equals(MAFIA) || playerMap.get(myID).equals(POLICE))) {
+				// 플레이어별 투표 정보
+				playerVotes.put(myID, wantUserID[1]);
+
+				if (!playerMap.get(myID).equals(POLICE)) {
+					// 플레이어별 투표 수
+					voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+					writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
+					return wantUserID[1];
+
+				} else {
+
+				}
+			}
+			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다. 그리고 null의 대한 처리는 낮()에서 처리
 			return "";
 			// 아침=거짓, 저녁=거짓일때 방어코드
 		} else {
 			writer.println("명령어를 정확히 입력해주세요");
 			return "";
 		}
-		
+
 		return message;
 
 		// 만약 경찰이 밤에 유저를 선택했다면? 경찰의 능력을 사용할때이므로 밤일때의 조건에서 유저가 경찰일때 조건으로 유저의 아이디가 아닌 유저의
@@ -283,6 +330,10 @@ public class MafiaGameController {
 //		//가장 많은 표를 받은 플레이어 (추방메서드에서 사용
 //		playerWithMostVotes		
 	}
+// 만들어야 할 메서드
+	// 유저선택한정보공개(투표라면 투표한 상황, 능력사용이라면 능력을 사용한 후 상황)
+	// 추방에 사용한 정보 초기화
+	// 게임종료체크(여기에서 밤 낮의 상태값 변경)	
 
 	// 서버 시작 메서드
 	public void startServer() {
