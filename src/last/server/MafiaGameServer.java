@@ -38,9 +38,9 @@ public class MafiaGameServer {
 			// 클라이언트로부터 메시지 수신 및 처리
 			String message;
 			while ((message = reader.readLine()) != null) {
-				controller.processClientMessage(userID, message);
 				try {
-					//쓰레드를 공유하고 있어 간섭현상나는 것을 방지하기 위한 코드
+//					controller.processClientMessage(userID, message);
+//					쓰레드를 공유하고 있어 간섭현상나는 것을 방지하기 위한 코드
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
