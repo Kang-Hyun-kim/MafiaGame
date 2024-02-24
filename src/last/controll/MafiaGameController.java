@@ -14,10 +14,10 @@ public class MafiaGameController {
 	private Map<String, String> playerVotes = new HashMap<>(); // 플레이어별 투표 정보
 	private Map<String, Integer> voteCounts = new HashMap<>(); // 플레이어별 투표 수
 	private Map<String, String> playerMap = new HashMap<>(); // 플레이어 역할 정보
+	
 	private List<String> roles = new ArrayList<>(); // 역할 정보
 	private List<String> userName = new ArrayList(); // 유저 이름 배열
 	private String MostVotesPlayer; // 가장 많은 표를 받은 플레이어
-	private int mafia_DoctorCount = 3; // 의사랑 마피아 인원
 
 	// test용으로 사용할 상태 값
 	// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -106,12 +106,12 @@ public class MafiaGameController {
 						낮(userID, message);
 
 					}
-
 					// 아침은 거짓, 저녁은 참
 					if (!(아침) && (저녁)) {
 						밤(userID, message);
 
 					}
+					broadcastMessage(userID,message);
 
 				}
 
@@ -211,7 +211,7 @@ public class MafiaGameController {
 		target = 유저선택한정보공개(target);
 
 		// 추방
-//		deleteUser(target);
+		ClientOut(target);
 		// 추방에 사용한 정보 초기화
 		// 게임종료체크(여기에서 밤 낮의 상태값 변경)
 
@@ -265,15 +265,20 @@ public class MafiaGameController {
 				// 플레이어별 투표 정보
 				playerVotes.put(myID, wantUserID[1]);
 				// 플레이어별 투표 수
-				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+				updateVoteCounts(wantUserID[1]);
 				writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
 				return wantUserID[1];
 			}
 			// 추방하기 위해서 유저이름을 리턴해준다. 비정상일 경우 null을 리턴한다. 그리고 null의 대한 처리는 낮()에서 처리
-
+			
+			//투표 정보를 7명이 했을 때 표시
+			if(playerVotes.size() > 6) {
+				
+			}
+			
 			// 저녁일때 = 역할에 따라 플레이어를 선택 아이디를 리턴, 시민은 안리턴, 경찰은 직업리턴을 해준다.
-//		} else if (!(아침) && 저녁 && message.startsWith("/role")) {
-		} else if ((아침) && !저녁) { // 테스트하기위해서 강제로 만듬
+		} else if (!(아침) && 저녁 && message.startsWith("/role")) {
+//		} else if ((아침) && !저녁) { // 테스트하기위해서 강제로 만듬
 //			writer.println("아침 & 저녁 참,거짓 조건문>>>>>>>> 저녁 상태");
 
 			if (message.startsWith("/role")) {
@@ -288,61 +293,26 @@ public class MafiaGameController {
 
 				}
 				// 나에게 출력을 해준다.
-//			writer.println("지금은 밤능력사용 저녁()>> 밤()>> 조건문");
-//			writer.println("아침: " + 아침 + "\n저녁: " + 저녁);
-//			writer.println("playerMap 플레이어 역할 : " + playerMap);
-//			writer.println("voteCounts 투표 카운트: " + voteCounts);
-//			writer.println("playerVotes 투표 선택: " + playerVotes);
-//			writer.println("나의 능력 : " + playerMap.get(myID));
-//			writer.println("선택한 유저 능력 : " + playerMap.get(wantUserID[1]));
-//
-//			writer.println("유저명 : " + myID);
-//			writer.println("내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
-
-//			writer.println("============================");
-//			writer.println("playerMap.get(myID).contains(MAFIA)" + playerMap.get(myID).contains(MAFIA));
-//			writer.println("playerMap.get(myID).contains(DOCTOR)" +playerMap.get(myID).contains(DOCTOR));
-//			writer.println("playerMap.get(myID).contains(POLICE)"+ playerMap.get(myID).contains(POLICE));
-//			writer.println("playerMap.get(myID).contains(CITIZEN)"+ playerMap.get(myID).contains(CITIZEN));
-//			writer.println("============================");
-//			writer.println("playerVotes.containsKey(myID) : "+ playerVotes.containsKey(myID) );
-//			writer.println("( wantUserID.length == 2 && !(playerVotes.containsKey(myID) )&&(\r\n"
-//					+ "					playerMap.get(myID).contains(DOCTOR)||\r\n"
-//					+ "					playerMap.get(myID).contains(MAFIA) ||\r\n"
-//					+ "					playerMap.get(myID).contains(POLICE))) : "+
-//					( wantUserID.length == 2 && !(playerVotes.containsKey(myID) )&&(
-//							playerMap.get(myID).contains(DOCTOR)||
-//							playerMap.get(myID).contains(MAFIA) ||
-//							playerMap.get(myID).contains(POLICE))) );
-//			writer.println("playerVotes.get(myID).contains(MAFIA)" + playerVotes.get(myID).contains(MAFIA));
-//			writer.println("playerVotes.get(myID).contains(DOCTOR)" +playerVotes.get(myID).contains(DOCTOR));
-//			writer.println("playerVotes.get(myID).contains(POLICE)"+ playerVotes.get(myID).contains(POLICE));
-//			writer.println("playerVotes.get(myID).contains(CITIZEN)"+ playerVotes.get(myID).contains(CITIZEN));
-//			writer.println("============================");
-				// 마피아,의사 일때
-
+				String myJob = playerMap.get(myID);
+//				broadcast("myID ->" + myID);
+//				broadcast("getKey(playerMap,myID) ->" + getKey(playerMap,myID));
+//				broadcast("myJob ->" + myJob);
+//				broadcast("playerVotes.containsKey(myJob) ->" + playerVotes.containsKey(myJob));
+				broadcast("playerMap ->" + playerMap);
+				broadcast("playerVotes ->" + playerVotes);
 				// 능력사용한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
-				if (playerVotes.containsKey(myID)) {
+				if (playerVotes.containsKey(myJob)) {
 					writer.println("밤 역할 검증 조건문 >>>>>>>>"); // @@@@@@@@@@@@@@@@@@@@@@
 					writer.println("당신은 이미 역할을 마쳤습니다.");
 					return null;
 
-					// 배열의 길이가 2이고 투표MAP에 나의 아이디가 false라면 (투표를 하면 put으로 값을 넣었다)
-					// 나의 직업이 마피아,경찰,의사인 경우
-//			} 
-//			else if(playerVotes.size()==0 && (playerMap.get(myID).contains(MAFIA)||playerMap.get(myID).contains(DOCTOR))) {
-//				writer.println("사이즈가 0입니다");
-//				// 플레이어별 투표 수
-//				voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
-//				playerVotes.put(myID, wantUserID[1]);
-//				writer.println("3내가 선택한 유저닉네임은 [ " + wantUserID[1] + " ] 입니다.");
-//				return wantUserID[1];
 
 				} else if ((wantUserID.length == 2 && !(playerVotes.containsKey(myID))
 						&& (playerMap.get(myID).contains(DOCTOR) || playerMap.get(myID).contains(MAFIA1)
 								|| playerMap.get(myID).contains(MAFIA2) || playerMap.get(myID).contains(POLICE)))) {
 					// 플레이어별 투표 정보 ( 투표를 하고 난 후에 초기화 작업이 이루어져야 한다. 게임체크할때 초기화를 해주면 좋을것같다)
 					writer.println("나의 직업이 마피아,경찰,의사인 경우 >>>>");
+					writer.println("playerVotes >>>" + playerVotes );
 					writer.println("playerMap.get(myID).contains(DOCTOR)>>>>" + playerMap.get(myID).contains(DOCTOR));
 					writer.println("playerMap.get(myID).contains(MAFIA1)>>>>" + playerMap.get(myID).contains(MAFIA1));
 					writer.println("playerMap.get(myID).contains(MAFIA2)>>>>" + playerMap.get(myID).contains(MAFIA2));
@@ -351,7 +321,7 @@ public class MafiaGameController {
 							|| playerMap.get(myID).contains(MAFIA2)) {
 						if (playerMap.get(myID).contains(MAFIA1) || playerMap.get(myID).contains(MAFIA2)) {
 							// 플레이어별 투표 수
-							voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+							updateVoteCounts(wantUserID[1]);
 						}
 						writer.println("[ " + wantUserID[1] + " ]를 선택했습니다.");
 						// 마피아와 의사의 선택 Map<직업,타겟유저명>
@@ -362,7 +332,7 @@ public class MafiaGameController {
 						//// 경찰일때
 					} else if (playerMap.get(myID).contains(POLICE)) {
 						// 경찰이니까 카운트에 올릴 필요 없음
-//					voteCounts.put(wantUserID[1], voteCounts.getOrDefault(wantUserID[1], 0) + 1);
+						playerVotes.put(playerMap.get(myID), wantUserID[1]);
 						writer.println("선택한 유저직업은 [ " + playerMap.get(wantUserID[1]) + " ] 입니다.");
 						return playerMap.get(wantUserID[1]);
 						// 시민일때
@@ -387,15 +357,19 @@ public class MafiaGameController {
 		// 역할을 리턴해준다.
 
 	}
-
-	private void 추방(String myId, String message) {
-//		//가장 많은 표를 받은 플레이어 (추방메서드에서 사용
-//		MostVotesPlayer
-	}
-
+	   // hashmap에 value 로 key 찾기
+	   public static <K, V> K getKey(Map<K, V> map, V value) {
+	 
+	        for (K key : map.keySet()) {
+	            if (value.equals(map.get(key))) {
+	                return key;
+	            }
+	        }
+	        return null;
+	    }
 	private String 유저선택한정보공개(String target) {
 		String killUser = null;
-		if (저녁) {// 아침임
+		if (아침) {
 			if (playerVotes.size() != playerCount) {
 				return null;
 			}
@@ -417,105 +391,138 @@ public class MafiaGameController {
 			}
 
 		}
-		if (아침) {// 저녁임
+		if (저녁) {
 			System.out.println("밤 능력 시작>>>");
 			// 저녁이라면 의사가 마피아 선택과 같은지,마피아가 같은인원을 선택해 마피아의 대상을 출력, 마피아가 다른인원을뽑아 추방이안되는출력			
 			boolean doctorsLive = false; //의사 존재하는지 체크
 			boolean mafiaTwo = false;	//두명의 마피아가 살아있는지 체크
 			boolean mafiaOne = false;	//마피아가 한명 살아있는지 체크
-			String liveOneMafia = null ; // 살아남은 마피아가 지목한 사람
+			String liveOneMafia = null ; // 살아남은 마피아
 			String Mafiachose = null;	// 마피아들이 지목한 사람
 			killUser = null;		//죽일대상 리턴용
 			System.out.println("playerMap >>>>" + playerMap );
+
+			
 			//일단 map에 마피아가 두명 있는지 확인
 			if( playerMap.values().contains(MAFIA1) && playerMap.values().contains(MAFIA2)) {
 				mafiaTwo = true; // 두명 있다면 두명에 대한 로직 실행
 			}else if(playerMap.values().contains(MAFIA1) || playerMap.values().contains(MAFIA2)) {
 				mafiaOne = true; // 마피아가 한명일때
-				if(playerMap.values().contains(MAFIA1))
-					liveOneMafia =  playerMap.get(MAFIA1);
-				if( playerMap.values().contains(MAFIA2))
-					liveOneMafia =  playerMap.get(MAFIA2);
+				//마피아가 한명일때 역할의 이름을 리턴해준다.
+				if(playerMap.values().contains(MAFIA1)) {
+					liveOneMafia = MAFIA1; 
+				}
+				else if( playerMap.values().contains(MAFIA2)) {
+					liveOneMafia = MAFIA2; 
+				}
 			}
 			if(playerMap.values().contains(DOCTOR)) {
 				doctorsLive = true; // 의사가 살아있다면 true
 			}
 			
-			if( mafiaTwo ) {
+			//경우의 수 다 씀
+			//마피아둘이랑 의사랑 살아있을때
+			if(mafiaTwo && doctorsLive) {
+				//의사랑 마피아 둘이 투표를 했는지?
+				if(playerVotes.get(DOCTOR) != null && playerVotes.get(MAFIA1) != null &&playerVotes.get(MAFIA2) != null) {
+					System.out.println("의사가 지목한 사람은 다음과 같습니다.>>"+ playerVotes.get(DOCTOR));
+					System.out.println("마피아1가 지목한 사람은 다음과 같습니다.>>"+ playerVotes.get(MAFIA1));
+					System.out.println("마피아2가 지목한 사람은 다음과 같습니다.>>"+ playerVotes.get(MAFIA2));
+					//두명의 마피아가 같은것을 선택했는지 체크
+					if(playerVotes.get(MAFIA1).contains(playerVotes.get(MAFIA2))) {
+						Mafiachose =  playerVotes.get(MAFIA1);
+						System.out.println("두명의 마피아가 같은 놈을 선택했습니다. 의사랑도 같은지 비교하십시오" + Mafiachose);
+						//마피아와 의사가 같은 플레이어를 선택하였는지 비교
+						if(playerVotes.get(DOCTOR).contains(Mafiachose) ) {
+							//의사랑 같은 사람을 지목했을떄
+							System.out.println("의사랑 같은 사람을 선택 null값으로 변경하기 전 killUser=>"+killUser);
+							killUser = "reset";
+							System.out.println("의사랑 같은 사람을 선택하였습니다. 추방하지 않게 reset값으로 변경합니다. killUser=>"+killUser);
+						}else { //의사와 마피아2명(2명의 지목상대는 같다) 선택이 다를 경우 추방
+							killUser = Mafiachose;
+							System.out.println("의사가 살리지 못했습니다. 추방을 시작합니다. killUser = Mafiachose >>>"+killUser);
+						}
+						
+					}else {//마피아가 다른 플레이어들을 지목한 경우
+						killUser = "reset";
+						System.out.println("마피아가 다른 플레이어를 서로 지목해서 추방할수없습니다. 추방하지 않게 reset값으로 변경합니다 >>>killUser : "+killUser);
+					}
+				}
+
+			}else if(mafiaOne && doctorsLive) {//마피아 하나랑 의사랑 살아있을때
+				//의사와 마피아 하나가 투표 했는지?
+				if(playerVotes.get(liveOneMafia) != null && playerVotes.get(DOCTOR) != null) {
+					//같은 플레이어를 지목했는지?
+					if(playerVotes.get(liveOneMafia).contains(playerVotes.get(DOCTOR))) {
+						System.out.println("의사랑 마피아 1명이 같은 플레이어를 지목 추방하지 못합니다. playerVotes.get(DOCTOR)>> "+playerVotes.get(DOCTOR) );
+						killUser = "reset";
+					}else{
+						System.out.println("의사랑 마피아 1명이 다른 플레이어를 지목 playerVotes.get(DOCTOR) >> "+playerVotes.get(DOCTOR) );
+						System.out.println("의사랑 마피아 1명이 다른 플레이어를 지목 playerVotes.get(liveOneMafia) >> "+playerVotes.get(liveOneMafia) );
+						killUser = playerVotes.get(liveOneMafia);
+						
+					}
+				}
+			}else if(mafiaTwo) { //마피아 둘만 살아있을때
 				//두명의 마피아가 살아있고 투표를 진행했는지 체크
 				if(playerVotes.get(MAFIA1) != null && playerVotes.get(MAFIA2) != null) {
 					//두명의 마피아가 같은것을 선택했는지 체크
 					if(playerVotes.get(MAFIA1).contains(playerVotes.get(MAFIA2))) {
-						System.out.println("두명의 마피아가 같은 놈을 선택했습니다. 의사랑도 같은지 비교하십시오" + playerVotes.get(MAFIA1));
+						System.out.println("두명의 마피아가 같은 놈을 선택했습니다." + playerVotes.get(MAFIA1));
 						Mafiachose =  playerVotes.get(MAFIA1);
 						killUser = Mafiachose;
+					}else { // 다른 플레이어들을 선택했을떄
+						System.out.println("다른 플레이어들을 선택해서 죽이지 않습니다");
+						killUser = null;
 					}
 					
 				}
-			}else if( mafiaOne) {
-				//한명의 마피아가 존재해서 들어오는 if문
+			}else if(mafiaOne) {//마피아 한명만 살아있을때
 				//한명의 마피아가 투표를 했는지 체크
-				if( liveOneMafia != null ) {
-					System.out.println("한명의 마피아가 선택을 했습니다. >>> " + liveOneMafia);
-					killUser = liveOneMafia;
+				if( playerVotes.get(liveOneMafia) != null ) {
+					System.out.println("한명의 마피아가 선택을 했습니다. >>> " + playerVotes.get(liveOneMafia));
+					killUser = playerVotes.get(liveOneMafia);
 					
 				}
-			}
-			if( doctorsLive) {
-				//의사가 투표했는지?
-				if(playerVotes.get(DOCTOR) != null) {
-					System.out.println("의사가 지목한 사람은 다음과 같습니다.>>"+ playerVotes.get(DOCTOR));
-					//의사와 마피아가 뽑은 사람이 같은지? 마피아가 두명일때와 한명일때
-					if( Mafiachose != null &&  playerVotes.get(DOCTOR).contains(Mafiachose)) {
-						System.out.println("의사랑 마피아들이랑 같은 사람을 골랐네요");
-						killUser = null;
-					}
-					
-					else if( liveOneMafia !=null && playerVotes.get(DOCTOR).contains(liveOneMafia)) {
-						System.out.println("의사랑 마피아 한명이랑 같은 사람을 골랐어요");
-						killUser = null;
-					}
-					
-				}
-			}
-				
+			}	
 			return killUser;
 		}
 		return killUser;
 
 	}
 
-	private void deleteUser(String dUser) {
+	private void ClientOut(String dUser) {
 		// 해당 플레이어의 클라이언트 소켓을 찾아서 종료합니다.
 		System.out.println("dUser = " + dUser);
-
+		if(dUser == null) {
+			System.out.println("dUser가 null입니다. 추방할사람의 정보가 없습니다." + dUser);
+			return ;
+		}else if(dUser == "reset") { // 같은 대상을 선택하여 초기화 진행
+			playerVotes.clear(); // 투표정보 초기화
+			//낮과 밤 바꾸기
+		}
 		Socket playerSocket = playerSockets.get(dUser);
 		if (playerSocket != null && !playerSocket.isClosed()) {
 			try {
+				//낮과 밤 바꾸기
 				playerSocket.close();
 				broadcast(dUser + "님의 클라이언트가 종료되었습니다.");
 				playerCount--; // 현재 플레이어 인원 감소
 				playerSockets.remove(dUser); // hashmap에 저장된 현재 플레이어들의 정보 삭제
-				if (!playerVotes.containsKey(DOCTOR)) {
-					mafia_DoctorCount--;
-				}
-				if (!playerVotes.containsKey(MAFIA1)) {
-					mafia_DoctorCount--;
-				}
-				if (!playerVotes.containsKey(MAFIA2)) {
-					mafia_DoctorCount--;
-				}
+				playerMap.remove(dUser);
+//				clientWriters.remove(dUser); // 플레이어 주소정보 삭제
+				userName.removeIf(item -> item.equals(dUser));
 				playerVotes.clear(); // 투표정보 초기화
 				broadcast("남은 플레이어  : " + playerSockets); ///////////////////////////////////////////////////////
 				broadcast("playerVotes.size() : " + playerVotes.size()); ////////////////////////
-				System.out.println(mafia_DoctorCount);
 			} catch (IOException e) {
 				System.err.println("클라이언트 종료 중 오류가 발생했습니다: " + e.getMessage());
 			}
 		}
-//		if(dUser.indexOf() == @)
 	}
-
+	private void gameEndCheck() {
+		//게밈
+	}
 	// 서버 시작 메서드
 	public void startServer() {
 		try (ServerSocket serverSocket = new ServerSocket(90)) {
@@ -561,23 +568,7 @@ public class MafiaGameController {
 		}
 	}
 
-	// 플레이어 선택 메서드
-	// 플레이어에게 역할 메시지를 보내는 메서드
-	private String sendRoleMessage(String playerID, String targetID) {
-		// 플레이어 ID를 기반으로 선택된 플레이어를 찾음
-
-		try {
-			// 선택된 플레이어에게 역할 메시지를 전송
-			PrintWriter writer = new PrintWriter(playerSockets.get(playerID).getOutputStream(), true);
-			writer.println("[" + targetID + "] 선택");
-		} catch (IOException e) {
-			System.err.println("플레이어에게 역할 메시지를 보낼 수 없습니다: " + e.getMessage());
-			return null;
-		}
-		return targetID;
-	}
-
-	// 클라이언트 > 다른 모든 클라이언트에게 메시지를 출력하는 메서드
+	// 클라이언트가  다른 모든 클라이언트에게 메시지를 출력하는 메서드
 	public void broadcastMessage(String userID, String message) {
 		// 모든 클라이언트에게 메시지 전송
 		for (PrintWriter clientWriter : clientWriters) {
@@ -585,7 +576,7 @@ public class MafiaGameController {
 		}
 	}
 
-	// 모든 클라이언트에게 출력 ( 사회자(서버)가 플레이어들에게 공통적으로 보여줄 메시지)
+	// 모든 클라이언트에게 출력 ( 사회자(서버)가 클라이언트들에게 공통적으로 보여줄 메시지)
 	private void broadcast(String message) {
 		for (PrintWriter clientWriter : clientWriters) {
 			clientWriter.println(message);
@@ -604,43 +595,6 @@ public class MafiaGameController {
 		System.out.println();
 	}
 
-	// 투표하기
-	public void vote(String userID, String voteMessage) {
-
-		// 게임이 낮에 진행 중인지 확인
-		if (!isDayTime) {
-			// 낮이 아닌 시간에는 투표를 허용하지 않음
-			System.out.println("현재는 낮 시간이 아닙니다. 투표는 낮에만 가능합니다.");
-			return;
-		}
-
-		// 이미 투표한 플레이어인지 확인
-		if (playerVotes.containsKey(userID)) {
-			broadcast(userID + "님은 이미 투표하셨습니다.");
-			return; // 이미 투표한 경우에는 추가적인 투표를 허용하지 않음
-		}
-		// '/vote playerName'에서 playerName 추출
-		String[] parts = voteMessage.split(" ");
-		// 투표 가능한 플레이어인지 확인하기 위해서는 투표한 값에서 split으로 유저명의 값이 담긴 parts를 사용
-		if (!(userName.contains(parts[1]))) {// false면 실행
-			broadcast("없는 유저입니다. 다시 투표해 주세요");
-			return;
-		}
-
-		if (parts.length == 2) {
-			String playerName = parts[1];
-			// 플레이어가 투표한 사람 정보 저장
-			playerVotes.put(userID, playerName);
-			// 투표 결과를 처리하고 클라이언트에게 알림
-			updateVoteCounts(playerName);
-			broadcastVoteStatus();
-			if (playerVotes.size() == playerCount) {
-				handleVoteResult();
-			}
-		} else {
-
-		}
-	}
 
 	// 플레이어별 투표 수 업데이트
 	private void updateVoteCounts(String votee) {
@@ -667,31 +621,7 @@ public class MafiaGameController {
 		}
 	}
 
-	// 투표 결과 처리
-	private void handleVoteResult() {
-		int maxVotes = 0;
-		for (Map.Entry<String, Integer> entry : voteCounts.entrySet()) {
-			if (entry.getValue() > maxVotes) {
-				maxVotes = entry.getValue();
-				MostVotesPlayer = entry.getKey();
-			}
-		}
-		if (isTie(maxVotes)) {
-			broadcast("동점이 발생하여 추방을 하지 않습니다.");
-			initializeVoteCounts(); // 투표 결과 초기화
-		} else {
-			broadcast(MostVotesPlayer + "님이 추방되었습니다. (" + maxVotes + "표)");
-			terminateClient(MostVotesPlayer);
-		}
-
-		// 투표 결과를 처리한 후에는 voteCounts를 초기화해야 함
-		initializeVoteCounts();
-
-		// 모든 플레이어의 투표를 초기화
-		playerVotes.clear();
-		// 투표 종료전 상태 변경
-		isDayTime = !(isDayTime);
-	}
+	
 
 	// 동점 여부 확인
 	private boolean isTie(int maxVotes) {
@@ -705,67 +635,25 @@ public class MafiaGameController {
 		return count > 1;
 	}
 
-	// 투표 수 초기화
+
+	// 초기화 메서드 한곳에 몰아 넣을 것 조건 별로 넣어도 괜찮을 듯
 	private void initializeVoteCounts() {
 		voteCounts.clear();
 	}
 
 	// 60초 Timer(Timer, 500); 추가 할지 말지 고민중
 
-	// @@@@@@@@@@@@@@@@@@@@@@
-	// 게임의 현재 상태를 리턴해주는 메서드( 낮, 밤, 투표, 밤이였을때 할 수 있는 플레이어 역할들 ) 필요한지 잘 모르겠음
-
-	// 의사가 플레이어 지목 ( 밤일때)
-	private void doctorNightTarget(String player) {
-		// 메서드가 시작이 될때 플레이어가 의사여야만 된다. 플레이어 역할을 전달해주어야한다.
-		if (!(isDayTime)) {
-			if (playerMap.containsKey(DOCTOR))//
-				return;
-		}
-
-		sendPlayMessage(player, "의사만 사용 가능한 명령어입니다.");
-
-	}
-	// 경찰이 플레이어 역할 보기
-
-	// 마피아 플레이어 지목 (1명일때, 2명일때) = 리턴 값으로 유저 이름을 전달 없으면 null이나 공백으로 예외를 발생시킨다.
-
-	// 의사가 고른 플레이어 & 마피아가 고른 플레이어(예외 값 들어있을 수 있음)를 교차 검증하여 추방하거나 추방하지 않는 메서드
-
+	
 	// 추방된 사람들끼리 채팅방을 만들어주는 메서드 해보고 싶다.. 그냥 희망사항
 
-	// 플레이어 클라이언트 종료
-	private void terminateClient(String player) {
-		broadcast("player -> " + player);
-		// 해당 플레이어의 클라이언트 소켓을 찾아서 종료합니다.
-		Socket playerSocket = playerSockets.get(player);
-		broadcast("playerSocket -> " + playerSocket);
-		broadcast("playerSocket.isClosed ->" + playerSocket.isClosed());
-		if (playerSocket != null && !playerSocket.isClosed()) {
-			broadcast("if문 진입 -> ");
-			try {
-				playerSocket.close();
-				broadcast(player + "님의 클라이언트가 종료되었습니다.");
-				isDayTime = !isDayTime; // 낮인지 밤인지 상태값 변경 투표 종료시 밤으로 변경
-				playerCount--; // 현재 플레이어 인원 감소
-				broadcast("남은 플레이어 수 : " + playerCount);/////////////////////////////////////////////////////////
-				playerSockets.remove(player); // hashmap에 저장된 현재 플레이어들의 정보 삭제
-				playerVotes.remove(player); // hashmap에 저장된 현재 플레이어들의 정보 삭제
-				clientWriters.remove(player); // 플레이어 주소정보 삭제
-				userName.removeIf(item -> item.equals(player));
-				broadcast("userName : " + userName);
-				broadcast("남은 플레이어  : " + playerSockets); ///////////////////////////////////////////////////////
-				broadcast("playerVotes.size() : " + playerVotes.size()); ////////////////////////
-			} catch (IOException e) {
-				System.err.println("클라이언트 종료 중 오류가 발생했습니다: " + e.getMessage());
-			}
-		}
-	}
-
-	// 클라이언트가 메시지를 전송할 때 호출됨 (지금 사용안하고 있음 추후에 완성시 사용안하면 삭제 예정)
+	// 클라이언트가 메시지를 전송할 때 호출됨
 	public void processClientMessage(String userID, String message) {
 		if (message.startsWith("/vote")) {
-			vote(userID, message);
+			try {
+				유저선택(userID, message);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
 		} else {
 			broadcastMessage(userID, message);
