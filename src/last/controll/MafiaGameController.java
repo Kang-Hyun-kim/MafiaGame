@@ -87,12 +87,8 @@ public class MafiaGameController {
 				// reader.readLine() 을 만나면 대기상태로 바뀐다. 실제로 while문의 조건에서 멈춰 있는다. message를 대입하기 전에서
 				// 대기중
 				String message;
-				int test = 0;
 				while ((message = reader.readLine()) != null) {
-					if(test ==0) {
-						broadcast("낮입니다. /vote로 투표를 시작하세요~");
-						test--;
-					}
+					
 					try {
 						Thread.sleep(99); // 0.99초 동안 잠들게 만든다 쓰레드 간섭을 최소화 시키려고 만든 방어로직인데 잘은 모르겠다. 찾아볼것
 					} catch (Exception e) {
@@ -110,22 +106,26 @@ public class MafiaGameController {
 					}
 					if(!message.startsWith("/"))
 					broadcastMessage(userID,message);
+					
+					if(!아침 && !저녁) {
+						System.exit(0);
+					}
 
 				}
 
 			} catch (IOException e) {
 				System.out.println("[ "+userID +" ]님이 나갔습니다.");
-				broadcast("[ "+userID +" ]님이 나갔습니다.");
+				System.out.println(e.getMessage());
 			} finally {
-				if (userID != null) {
-					clientWriters.remove(writer);
-					Iterator<PrintWriter> iterator = clientWriters.iterator();
-					while (iterator.hasNext()) {
-					    PrintWriter clientWriter = iterator.next();
-					    clientWriter.println(userID + "님이 나갔습니다.");
-					}
-
-				}
+//				if (userID != null) {
+//					clientWriters.remove(writer);
+//					Iterator<PrintWriter> iterator = clientWriters.iterator();
+//					while (iterator.hasNext()) {
+//					    PrintWriter clientWriter = iterator.next();
+//					    clientWriter.println(userID + "님이 나갔습니다.");
+//					}
+//
+//				}
 				try {
 					socket.close();
 				} catch (IOException e) {
@@ -174,8 +174,11 @@ public class MafiaGameController {
 		System.out.println("현재 게임 상태는 밤의 추방() 입니다.");
 		ClientOut(target);
 		
-		if(아침)
-		broadcast("낮이 되었습니다 [/role 플레이어이름]을 사용하여 능력사용을 진행 할 수 있습니다.");
+		if(아침) {
+			broadcast("낮이 되었습니다 [/vote 플레이어이름]을 사용하여 능력사용을 진행 할 수 있습니다.");
+			broadcast("");
+			
+		}
 	}
 
 	// 투표할때 사용할수있고, 밤에는 죽일 유저를 선택할수 있어 공통기능으로 사용될 유저를 선택하는 기능
@@ -240,7 +243,7 @@ public class MafiaGameController {
 //				broadcast("myJob ->" + myJob);
 //				broadcast("playerVotes.containsKey(myJob) ->" + playerVotes.containsKey(myJob));
 //				broadcast("playerMap ->" + playerMap);
-				broadcast("playerVotes ->" + playerVotes);
+//				broadcast("playerVotes ->" + playerVotes);
 				// 능력사용한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
 				if (playerVotes.containsKey(myJob)) {
 					writer.println("밤 역할 검증 조건문 >>>>>>>>"); // @@@@@@@@@@@@@@@@@@@@@@
@@ -291,6 +294,7 @@ public class MafiaGameController {
 			return null;
 		} else if(저녁 && message.startsWith("/vote")){
 			writer.println("지금은 저녁입니다 투표를 할 수 없습니다.");
+			
 			return null;
 		} else if(message.startsWith("/")){
 			writer.println("명령어를 정확히 입력해주세요");
@@ -332,7 +336,7 @@ public class MafiaGameController {
 
 			if (isTie(maxVotes)) {
 				broadcast("동점이 발생하여 추방을 하지 않습니다.");
-				return null;
+				return "reset";
 			} else {
 				broadcast(MostVotesPlayer + "님이 추방결정되었습니다. (" + maxVotes + "표)");
 				killUser = MostVotesPlayer;
@@ -443,48 +447,52 @@ public class MafiaGameController {
 
 	}
 
-	private void ClientOut(String dUser) throws IOException {
+	private void ClientOut(String dUser)  {
 		System.out.println("추방될 유저의 닉네임 = [ " + dUser+" ]");
-		if(dUser == null) {
-			System.out.println("추방할 유저의 정보가 없습니다.\nㄴKillUser : [" + dUser+" ]");
-			return ;
-		} 
+		
 		//투표 정보를 7명이 했을 때 표시
 		if(playerVotes.size() == playerCount && 아침) {
 			System.out.println("투표를 모두 마쳤습니다. 투표 정보를 공개합니다.");
 			System.out.println(playerVotes);
 			broadcast("투표를 모두 마쳤습니다.\nㅁㅁㅁㅁㅁㅁ투표정보 공개합니다.ㅁㅁㅁㅁㅁㅁ\n"+playerVotes);
-		}
+		}else if(dUser == null) {
+			System.out.println("추방할 유저의 정보가 없습니다.\nㄴKillUser : [" + dUser+" ]");
+			return ;
+		} 
 		if(dUser == "reset") { // 같은 대상을 선택하여 초기화 진행
 			playerVotes.clear(); // 투표정보 초기화
 			//낮과 밤 바꾸기
 			System.out.println("투표 정보를 초기화 합니다.");
 			아침 = !아침;
 			저녁 = !저녁;
-			
+			return ;
 		}
 
 		// 해당 플레이어의 클라이언트 소켓을 찾아서 종료
+		try {
 		Socket playerSocket = playerSockets.get(dUser);
 		PrintWriter writer = new PrintWriter(playerSockets.get(dUser).getOutputStream(), true);
-		if (playerSocket != null && !playerSocket.isClosed()) {
-			try {
+			if (playerSocket != null && !playerSocket.isClosed()) {
 				//낮과 밤 바꾸기
 				writer.println("@@@@@@@@@@@@@@@추방 되었습니다@@@@@@@@@@@@@@@@");
 				playerSocket.close();
+				broadcast("추방될 유저의 닉네임 = [ " + dUser+" ]");
 				broadcast(dUser + "님의 클라이언트가 종료되었습니다.");
 				Initialization(dUser); // 유저 HshMap의 정보 초기화작업				
 				broadcast("남은 플레이어  : " + userName);
+				아침 = !아침;
+				저녁 = !저녁;
 				if(gameEndCheck()) {
 					//게임 종료를 체크하여 게임이 끝나는 상태인지 확인
 					broadcast("게임이 종료되었습니다.");
 					broadcast("각 플레이어 직업 :\n"+ copyPlayerMap);
+					broadcast("모든 플레이어의 접속을 종료합니다.");
+					playerSockets.clear();//모든 소켓 제거
+					writer.flush();
 				}
-				아침 = !아침;
-				저녁 = !저녁;
-			} catch (IOException e) {
-				System.err.println("클라이언트 종료 중 오류가 발생했습니다: " + e.getMessage());
 			}
+		} catch (IOException e) {
+			System.err.println("클라이언트 종료 중 오류가 발생했습니다: " + e.getMessage());
 		}
 	}
 	
@@ -497,12 +505,12 @@ public class MafiaGameController {
 		playerSockets.remove(dUser); // hashmap에 저장된 현재 플레이어들의 정보 삭제
 		playerMap.remove(dUser); //현재 플레이어<유저명,역할>의 추방할 유저기록 삭제
 		userName.removeIf(item -> item.equals(dUser)); //추방될 유저의 기록 삭제
-		System.out.println("유저선택 정보 카운트 초기화\nㄴ>voteCounts : [ "+voteCounts+" ]"+
-		"유저선택 정보 초기화\nㄴ>playerVotes : [ "+playerVotes+" ]"+
-		"유저 수 감소\nㄴ>playerCount : [ "+playerCount+" ]" +
-		"유저 클라이언트 정보 삭제\nㄴ>playerSockets : [ "+playerSockets+" ]"+
-		"유저 역할 정보 삭제\nㄴ>playerMap : [ "+playerMap+" ]"+
-		"유저 리스트 정보 삭제\nㄴ>userName : [ "+userName+" ]");
+		System.out.println("유저선택 정보 카운트 초기화\nㄴ>voteCounts : [ "+voteCounts+" ]\n"+
+		"유저선택 정보 초기화\nㄴ>playerVotes : [ "+playerVotes+" ]\n"+
+		"유저 수 감소\nㄴ>playerCount : [ "+playerCount+" ]\n" +
+		"유저 클라이언트 정보 삭제\nㄴ>playerSockets : [ "+playerSockets+" ]\n"+
+		"유저 역할 정보 삭제\nㄴ>playerMap : [ "+playerMap+" ]\n"+
+		"유저 리스트 정보 삭제\nㄴ>userName : [ "+userName+" ]\n");
 	}
 	
 	
@@ -546,8 +554,12 @@ public class MafiaGameController {
 		}
 		
 		if(cCount < mCount) { // 시민보다 마피아가 클경우
+			아침 = false;
+			저녁 = false;
 			return true;
 		}else if(mCount < 1) { // 마피아가 1보다 적을 경우
+			아침 = false;
+			저녁 = false;
 			return true;
 		}
 		
@@ -600,6 +612,9 @@ public class MafiaGameController {
 		}
 		copyPlayerMap.putAll(playerMap);// 역할 복사
 		System.out.println("복사한 유저 정보 >\n"+ copyPlayerMap);
+		broadcast("현재 플레이 중인 유저정보 : "+userName+" "); // 게임 시작시 한 번만 출력
+		broadcast("낮입니다. /vote로 투표를 시작하세요~"); // 게임 시작시 출력용
+		
 	}
 
 	// 클라이언트가 다른 모든 클라이언트에게 메시지를 출력하는 메서드
