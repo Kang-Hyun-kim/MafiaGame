@@ -45,12 +45,7 @@ public class MafiaGameClient {
 			try {
 				String message;
 				while ((message = reader.readLine()) != null) {
-					// 투표 상태 메시지인 경우에만 출력
-					if (message.startsWith("현재 투표 상태:")) {
 						System.out.println(message);
-					} else {
-						System.out.println(message);
-					}
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

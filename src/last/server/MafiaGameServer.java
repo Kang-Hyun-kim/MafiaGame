@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 
 import last.controll.MafiaGameController;
+import last.controll.MafiaGameControllercopy;
 
 public class MafiaGameServer {
 
@@ -16,8 +17,10 @@ public class MafiaGameServer {
 
 	public static void main(String[] args) {
 
-		MafiaGameController controller = new MafiaGameController();
-		controller.startServer();
+//		MafiaGameController controller = new MafiaGameController();
+//		controller.startServer();
+		MafiaGameControllercopy controller2 = new MafiaGameControllercopy();
+		controller2.startServer();
 	}
 
 	public void run() {
@@ -40,7 +43,7 @@ public class MafiaGameServer {
 			
 			while ((message = reader.readLine()) != null) {
 				try {
-//					controller.processClientMessage(userID, message);
+
 //					쓰레드를 공유하고 있어 간섭현상나는 것을 방지하기 위한 코드
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
