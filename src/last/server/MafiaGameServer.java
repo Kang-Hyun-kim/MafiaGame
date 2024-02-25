@@ -37,6 +37,7 @@ public class MafiaGameServer {
 
 			// 클라이언트로부터 메시지 수신 및 처리
 			String message;
+			
 			while ((message = reader.readLine()) != null) {
 				try {
 //					controller.processClientMessage(userID, message);

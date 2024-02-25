@@ -59,10 +59,12 @@ public class MafiaGameController {
 
 				// 모든 클라이언트에게 새로운 사용자가 연결되었음을 알림
 				// 좀 더 자세히 설명하면 다른 클라이언트들의 주소들을 가진 clientWriters 변수에 저장을 했다.
-				for (PrintWriter clientWriter : clientWriters) {
-					clientWriter.println(userID + "님이 연결되었습니다.");
-
+				Iterator<PrintWriter> iterator = clientWriters.iterator();
+				while (iterator.hasNext()) {
+				    PrintWriter clientWriter = iterator.next();
+				    clientWriter.println(userID + "님이 연결되었습니다.");
 				}
+
 				// 클라이언트 접속시 clientWriters
 				clientWriters.add(writer);
 				userName.add(userID); /////////////////////////
@@ -85,7 +87,12 @@ public class MafiaGameController {
 				// reader.readLine() 을 만나면 대기상태로 바뀐다. 실제로 while문의 조건에서 멈춰 있는다. message를 대입하기 전에서
 				// 대기중
 				String message;
+				int test = 0;
 				while ((message = reader.readLine()) != null) {
+					if(test ==0) {
+						broadcast("낮입니다. /vote로 투표를 시작하세요~");
+						test--;
+					}
 					try {
 						Thread.sleep(99); // 0.99초 동안 잠들게 만든다 쓰레드 간섭을 최소화 시키려고 만든 방어로직인데 잘은 모르겠다. 찾아볼것
 					} catch (Exception e) {
@@ -112,9 +119,12 @@ public class MafiaGameController {
 			} finally {
 				if (userID != null) {
 					clientWriters.remove(writer);
-					for (PrintWriter clientWriter : clientWriters) {
-						clientWriter.println(userID + "님이 나갔습니다.");
+					Iterator<PrintWriter> iterator = clientWriters.iterator();
+					while (iterator.hasNext()) {
+					    PrintWriter clientWriter = iterator.next();
+					    clientWriter.println(userID + "님이 나갔습니다.");
 					}
+
 				}
 				try {
 					socket.close();
@@ -141,8 +151,8 @@ public class MafiaGameController {
 		// 추방
 		System.out.println("현재 게임 상태는 낮의 추방() 입니다.");
 		ClientOut(target);
-
-
+		if(저녁)
+		broadcast("밤이 되었습니다 [/role 플레이어이름]을 사용하여 능력사용을 진행 할 수 있습니다.");
 	}
 
 	// 밤메서드 > 밤에 필요한 메서드를 하위 메서드들로 넣음
@@ -150,7 +160,7 @@ public class MafiaGameController {
 		아침 = false;
 		저녁 = true;
 		System.out.println("현재 게임 상태는 밤입니다.");
-		broadcast("밤이 되었습니다 [/role 플레이어이름]을 사용하여 능력사용을 진행 할 수 있습니다.");
+		
 
 		// 유저선택() -> null일수 있다. 조건문으로 검사해야함
 		String target = 유저선택(userID, message);
@@ -164,7 +174,8 @@ public class MafiaGameController {
 		System.out.println("현재 게임 상태는 밤의 추방() 입니다.");
 		ClientOut(target);
 		
-
+		if(아침)
+		broadcast("낮이 되었습니다 [/role 플레이어이름]을 사용하여 능력사용을 진행 할 수 있습니다.");
 	}
 
 	// 투표할때 사용할수있고, 밤에는 죽일 유저를 선택할수 있어 공통기능으로 사용될 유저를 선택하는 기능
@@ -278,7 +289,7 @@ public class MafiaGameController {
 		} else if(아침&&message.startsWith("/role")){
 			writer.println("지금은 아침입니다");
 			return null;
-		} else if(저녁&&message.startsWith("/vote")){
+		} else if(저녁 && message.startsWith("/vote")){
 			writer.println("지금은 저녁입니다 투표를 할 수 없습니다.");
 			return null;
 		} else if(message.startsWith("/")){
@@ -291,15 +302,17 @@ public class MafiaGameController {
 		// 역할을 리턴해준다.
 
 	}
-	// hashmap에 value 로 key 찾기
 	public static <K, V> K getKey(Map<K, V> map, V value) {
-		for (K key : map.keySet()) {
-			if (value.equals(map.get(key))) {
-				return key;
-			}
-		}
-	return null;
+	    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
+	    while (iterator.hasNext()) {
+	        Map.Entry<K, V> entry = iterator.next();
+	        if (value.equals(entry.getValue())) {
+	            return entry.getKey();
+	        }
+	    }
+	    return null;
 	}
+
 	private String 유저선택한정보공개(String target) {
 		String killUser = null;
 		if (아침) {
@@ -308,12 +321,15 @@ public class MafiaGameController {
 			}
 			// 아침이라면 투표 최다 득표자를 출력
 			int maxVotes = 0;
-			for (Map.Entry<String, Integer> entry : voteCounts.entrySet()) {
-				if (entry.getValue() > maxVotes) {
-					maxVotes = entry.getValue();
-					MostVotesPlayer = entry.getKey();
-				}
+			Iterator<Map.Entry<String, Integer>> iterator = voteCounts.entrySet().iterator();
+			while (iterator.hasNext()) {
+			    Map.Entry<String, Integer> entry = iterator.next();
+			    if (entry.getValue() > maxVotes) {
+			        maxVotes = entry.getValue();
+			        MostVotesPlayer = entry.getKey();
+			    }
 			}
+
 			if (isTie(maxVotes)) {
 				broadcast("동점이 발생하여 추방을 하지 않습니다.");
 				return null;
@@ -457,9 +473,7 @@ public class MafiaGameController {
 				writer.println("@@@@@@@@@@@@@@@추방 되었습니다@@@@@@@@@@@@@@@@");
 				playerSocket.close();
 				broadcast(dUser + "님의 클라이언트가 종료되었습니다.");
-				
-				Initialization(dUser); // 유저 HshMap의 정보 초기화작업
-				
+				Initialization(dUser); // 유저 HshMap의 정보 초기화작업				
 				broadcast("남은 플레이어  : " + userName);
 				if(gameEndCheck()) {
 					//게임 종료를 체크하여 게임이 끝나는 상태인지 확인
@@ -476,11 +490,19 @@ public class MafiaGameController {
 	
 	// 초기화 메서드
 	private void Initialization(String dUser) {
+		System.out.println("초기화 작업을 시작합니다.");
+		voteCounts.clear(); // 투표정보 초기화
+		playerVotes.clear();
 		playerCount--; // 현재 플레이어 인원 감소
 		playerSockets.remove(dUser); // hashmap에 저장된 현재 플레이어들의 정보 삭제
 		playerMap.remove(dUser); //현재 플레이어<유저명,역할>의 추방할 유저기록 삭제
 		userName.removeIf(item -> item.equals(dUser)); //추방될 유저의 기록 삭제
-		voteCounts.clear(); // 투표정보 초기화
+		System.out.println("유저선택 정보 카운트 초기화\nㄴ>voteCounts : [ "+voteCounts+" ]"+
+		"유저선택 정보 초기화\nㄴ>playerVotes : [ "+playerVotes+" ]"+
+		"유저 수 감소\nㄴ>playerCount : [ "+playerCount+" ]" +
+		"유저 클라이언트 정보 삭제\nㄴ>playerSockets : [ "+playerSockets+" ]"+
+		"유저 역할 정보 삭제\nㄴ>playerMap : [ "+playerMap+" ]"+
+		"유저 리스트 정보 삭제\nㄴ>userName : [ "+userName+" ]");
 	}
 	
 	
@@ -580,20 +602,27 @@ public class MafiaGameController {
 		System.out.println("복사한 유저 정보 >\n"+ copyPlayerMap);
 	}
 
-	// 클라이언트가  다른 모든 클라이언트에게 메시지를 출력하는 메서드
+	// 클라이언트가 다른 모든 클라이언트에게 메시지를 출력하는 메서드
 	public void broadcastMessage(String userID, String message) {
-		// 모든 클라이언트에게 메시지 전송
-		for (PrintWriter clientWriter : clientWriters) {
-			clientWriter.println(userID + ": " + message);
-		}
+	    // 모든 클라이언트에게 메시지를 보냅니다.
+	    Iterator<PrintWriter> iterator = clientWriters.iterator();
+	    while (iterator.hasNext()) {
+	        PrintWriter clientWriter = iterator.next();
+	        clientWriter.println(userID + ": " + message);
+	    }
 	}
 
-	// 모든 클라이언트에게 출력 ( 사회자(서버)가 클라이언트들에게 공통적으로 보여줄 메시지)
+
+	// 모든 클라이언트에게 출력 (사회자(서버)가 클라이언트들에게 공통적으로 보여줄 메시지)
 	private void broadcast(String message) {
-		for (PrintWriter clientWriter : clientWriters) {
-			clientWriter.println(message);
-		}
+	    // 모든 클라이언트에게 메시지를 보냅니다.
+	    Iterator<PrintWriter> iterator = clientWriters.iterator();
+	    while (iterator.hasNext()) {
+	        PrintWriter clientWriter = iterator.next();
+	        clientWriter.println(message);
+	    }
 	}
+
 
 	// 특정 플레이어에게 메시지를 전달하는 메서드
 	private void sendPlayMessage(String playerID, String message) {
@@ -615,15 +644,18 @@ public class MafiaGameController {
 
 	// 동점 여부 확인
 	private boolean isTie(int maxVotes) {
-		int count = 0;
-		for (int votes : voteCounts.values()) {
-			if (votes == maxVotes) {
-				count++;
-			}
-		}
-		System.out.println("count >>>"+ count);
-		return count > 1;
+	    int count = 0;
+	    Iterator<Integer> iterator = voteCounts.values().iterator();
+	    while (iterator.hasNext()) {
+	        int votes = iterator.next();
+	        if (votes == maxVotes) {
+	            count++;
+	        }
+	    }
+	    System.out.println("count >>>"+ count);
+	    return count > 1;
 	}
+
 
 	// 60초 Timer(Timer, 500); 추가 할지 말지 고민중
 
