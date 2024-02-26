@@ -2,14 +2,16 @@ package last.controll;
 
 import java.io.*;
 import java.net.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
 
 
 public class MafiaGameController {
 
 	private Set<PrintWriter> clientWriters = new HashSet<>(); // 역할 정보 주소
-	private boolean gameStarted = false;
-	private boolean isDayTime = false; // 낮과 밤의 상태 값 기본 적으로 밤(false) 상태를 갖는다. 7명의 플레이어가 모여야 게임이 실행된다.
 	private int playerCount = 0; // 플레이어 수
 	private Map<String, Socket> playerSockets = new HashMap<>(); // 플레이어 이름과 소켓 맵핑
 	private Map<String, String> playerVotes = new HashMap<>(); // 플레이어별 투표 정보
@@ -17,17 +19,22 @@ public class MafiaGameController {
 	private Map<String, String> playerMap = new HashMap<>(); // 플레이어 역할 정보
 	private Map<String, String> copyPlayerMap = new HashMap<>(); // 플레이어 역할 정보 복사
 	private static final int MAX_CLIENTS = 7;
-    private int connectedClients = 0;
+	
+	private boolean mafiaWin = false;
+	private boolean civilWin = false;
     
-	private List<String> roles = new ArrayList<>(); // 역할 정보
-	private List<String> userName = new ArrayList(); // 유저 이름 배열
+	private List<String> userName = new ArrayList<String>(); // 유저 이름 배열
 	private String MostVotesPlayer; // 가장 많은 표를 받은 플레이어
+	
+	private PreparedStatement statement; // 데이터베이스
 
-	// test용으로 사용할 상태 값
-	// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+	// 데이터베이스 연결 정보
+	private static final String JDBC_URL = "jdbc:mysql://localhost:3306/mafia";
+	private static final String USERNAME = "java";
+	private static final String PASSWORD = "mysql";
+	
 	private static boolean MORNING = false;
 	private static boolean EVENING = false;
-	// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 	// 역할 상수 정의
 	private static final String CITIZEN1 = "시민1";
@@ -57,8 +64,8 @@ public class MafiaGameController {
 				userID = reader.readLine();
 				System.out.println(userID + "님이 연결되었습니다.");
 				playerSockets.put(userID, socket);
-
 				playerCount++;
+
 
 				// 모든 클라이언트에게 새로운 사용자가 연결되었음을 알림
 				// 좀 더 자세히 설명하면 다른 클라이언트들의 주소들을 가진 clientWriters 변수에 저장을 했다.
@@ -144,8 +151,7 @@ public class MafiaGameController {
 			System.out.println("마피아 게임 서버 시작...");
 			while (true) {
 	            Socket clientSocket = serverSocket.accept();
-	            if (connectedClients < MAX_CLIENTS) {
-	                connectedClients++;
+	            if (playerCount < MAX_CLIENTS) {
 	                new Handler(clientSocket).start();
 	            } else {
 	                System.out.println("최대 허용 클라이언트 수를 초과하여 새로운 클라이언트의 접속을 거부합니다.");
@@ -514,6 +520,11 @@ public class MafiaGameController {
 					broadcast("게임이 종료되었습니다.");
 					broadcast("각 플레이어 직업 :\n"+ copyPlayerMap);
 					broadcast("모든 플레이어의 접속을 종료합니다.");
+//					saveToDatabase(mafiaWin,civilWin); // 일단 잠금
+					playerMap.clear();
+					playerVotes.clear();
+					voteCounts.clear();
+					clientWriters.clear();
 					playerSockets.clear();//모든 소켓 제거
 					writer.flush();
 				}
@@ -545,10 +556,12 @@ public class MafiaGameController {
 		if(cCount < mCount) { // 시민보다 마피아가 클경우
 			MORNING = false;
 			EVENING = false;
+			broadcast("---------------------------마피아의 승리---------------------------");
 			return true;
 		}else if(mCount < 1) { // 마피아가 1보다 적을 경우
 			MORNING = false;
 			EVENING = false;
+			broadcast("---------------------------시민의 승리---------------------------");
 			return true;
 		}
 		
@@ -638,18 +651,6 @@ public class MafiaGameController {
 	}
 
 
-	// 특정 플레이어에게 메시지를 전달하는 메서드
-	private void sendPlayMessage(String playerID, String message) {
-		PrintWriter writer;
-		try {
-			writer = new PrintWriter(playerSockets.get(playerID).getOutputStream(), true);
-			writer.println(message);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-
 	// 플레이어별 투표 수 업데이트
 	private void updateVoteCounts(String votee) {
 		voteCounts.put(votee, voteCounts.getOrDefault(votee, 0) + 1);
@@ -669,18 +670,73 @@ public class MafiaGameController {
 	    System.out.println("count >>>"+ count);
 	    return count > 1;
 	}
-	
-	private static <K, V> K getKey(Map<K, V> map, V value) {
-	    Iterator<Map.Entry<K, V>> iterator = map.entrySet().iterator();
-	    while (iterator.hasNext()) {
-	        Map.Entry<K, V> entry = iterator.next();
-	        if (value.equals(entry.getValue())) {
-	            return entry.getKey();
-	        }
-	    }
-	    return null;
-	}
+	// 역할 분배 후 데이터베이스에 역할에 맞는 플레이어명 입력 메서드
+		public void saveToDatabase(boolean mafiaWin, boolean civilWin) {
+			try (Connection connection = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD)) {
+				// 게임 결과 테이블에 역할에 맞는 플레이어명을 입력하기 위한 SQL 문
+				String sql = "INSERT INTO game_results (Mafia1, Mafia2, Citizen1, Citizen2, Citizen3, Doctor, Police, MafiaWin, CivilWin) "
+						+ "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				this.statement = connection.prepareStatement(sql);
 
+				// 게임 결과 테이블에 값을 입력할 변수 초기화
+				String mafia1 = null;
+				String mafia2 = null;
+				String citizen1 = null;
+				String citizen2 = null;
+				String citizen3 = null;
+				String doctor = null;
+				String police = null;
+
+				// 각 플레이어 역할에 맞게 변수에 값을 할당
+				for (Map.Entry<String, String> entry : copyPlayerMap.entrySet()) {
+					String playerName = entry.getKey();
+					String role = entry.getValue();
+					switch (role) {
+					case "마피아1":
+						mafia1 = playerName;
+						break;
+					case "마피아2":
+						mafia2 = playerName;
+						break;
+					case "시민1":
+						citizen1 = playerName;
+						break;
+					case "시민2":
+						citizen2 = playerName;
+						break;
+					case "시민3":
+						citizen3 = playerName;
+						break;
+					case "의사":
+						doctor = playerName;
+						break;
+					case "경찰":
+						police = playerName;
+						break;
+					}
+				}
+
+				// SQL 문에 변수 값을 설정
+				statement.setString(1, mafia1);
+				statement.setString(2, mafia2);
+				statement.setString(3, citizen1);
+				statement.setString(4, citizen2);
+				statement.setString(5, citizen3);
+				statement.setString(6, doctor);
+				statement.setString(7, police);
+				statement.setBoolean(8, mafiaWin);
+				statement.setBoolean(9, civilWin);
+
+				// SQL 문 실행
+				statement.executeUpdate();
+
+				System.out.println("플레이어 역할을 데이터베이스에 저장했습니다.");
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
 
 	// 60초 Timer(Timer, 500); 추가 할지 말지 고민중
 

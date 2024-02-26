@@ -48,7 +48,7 @@ public class MafiaGameClient {
 						System.out.println(message);
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 
