@@ -228,12 +228,12 @@ public class MafiaGameController {
 				return null;
 
 			}
-			//현재 플레이중인 유저들의 아이디와 투표한 유저의 아이디가 존재 하지 않는다면?
-			if(playerMap.get(wantUserID) == null) {
-				System.out.println(myID+"님이 "+wantUserID+"라는 없는 아이디를 선택하였습니다.");
-				
-				return UserSelection(myID, message);
-			}
+//			//현재 플레이중인 유저들의 아이디와 투표한 유저의 아이디가 존재 하지 않는다면?
+//			if(playerMap.get(wantUserID) == null) {
+//				System.out.println(myID+"님이 "+wantUserID+"라는 없는 아이디를 선택하였습니다.");
+//				
+//				return UserSelection(myID, message);
+//			}
 			// 투표한 사람검증 = Map(내아이디,타겟아이디)의 키값이 참인지 거짓인지 있다면 참으로 리턴받는다.
 			if (playerVotes.containsKey(myID)) {
 //				writer.println("투표한사람 검증 조건문 >>>>>>>>");
@@ -520,7 +520,7 @@ public class MafiaGameController {
 					broadcast("게임이 종료되었습니다.");
 					broadcast("각 플레이어 직업 :\n"+ copyPlayerMap);
 					broadcast("모든 플레이어의 접속을 종료합니다.");
-//					saveToDatabase(mafiaWin,civilWin); // 일단 잠금
+					saveToDatabase(mafiaWin,civilWin);
 					playerMap.clear();
 					playerVotes.clear();
 					voteCounts.clear();

@@ -17,10 +17,10 @@ public class MafiaGameServer {
 
 	public static void main(String[] args) {
 
-//		MafiaGameController controller = new MafiaGameController();
-//		controller.startServer();
-		MafiaGameControllercopy controller2 = new MafiaGameControllercopy();
-		controller2.startServer();
+		MafiaGameController controller = new MafiaGameController();
+		controller.startServer();
+//		MafiaGameControllercopy controller2 = new MafiaGameControllercopy();
+//		controller2.startServer();
 	}
 
 	public void run() {
